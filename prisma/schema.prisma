@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model License {
+  id              String    @id @default(uuid())
+  machineCode     String    @unique @map("machine_code")
+  licenseKey      String?   @unique @map("license_key")
+  status          String    @default("trial")
+  trialStartAt    DateTime? @map("trial_start_at")
+  trialDays       Int       @default(7) @map("trial_days")
+  trialExtension  Int       @default(0) @map("trial_extension")
+  activatedAt     DateTime? @map("activated_at")
+  revokedAt       DateTime? @map("revoked_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  orders          Order[]
+  activationTokens ActivationToken[]
+
+  @@map("licenses")
+}
+
+model Order {
+  id              String    @id @default(uuid())
+  orderNo         String    @unique @map("order_no")
+  machineCode     String    @map("machine_code")
+  license         License?  @relation(fields: [licenseId], references: [id])
+  licenseId       String?   @map("license_id")
+  amount          Decimal   @db.Decimal(10, 2)
+  currency        String    @default("CNY")
+  paymentMethod   String?   @map("payment_method")
+  paymentStatus   String    @default("pending") @map("payment_status")
+  paidAt          DateTime? @map("paid_at")
+  activateToken   String?   @unique @map("activate_token")
+  tokenExpires    DateTime? @map("token_expires")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  activationTokens ActivationToken[]
+
+  @@map("orders")
+}
+
+model ActivationToken {
+  id              String    @id @default(uuid())
+  token           String    @unique
+  license         License   @relation(fields: [licenseId], references: [id])
+  licenseId       String    @map("license_id")
+  order           Order?    @relation(fields: [orderId], references: [id])
+  orderId         String?   @map("order_id")
+  machineCode     String    @map("machine_code")
+  used            Boolean   @default(false)
+  usedAt          DateTime? @map("used_at")
+  expiresAt       DateTime  @map("expires_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@map("activation_tokens")
+}
+
+model Admin {
+  id              String    @id @default(uuid())
+  username        String    @unique
+  passwordHash    String    @map("password_hash")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@map("admins")
+}
+
+model AuditLog {
+  id              String    @id @default(uuid())
+  action          String
+  targetType      String    @map("target_type")
+  targetId        String?   @map("target_id")
+  operator        String?
+  detail          Json?
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}
+
+model AppConfig {
+  key             String    @id
+  value           Json
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("app_config")
+}

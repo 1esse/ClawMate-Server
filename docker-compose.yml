@@ -1,0 +1,41 @@
+services:
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - redis
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://clawmate:password@postgres:5432/clawmate
+      REDIS_URL: redis://redis:6379
+      TZ: Asia/Shanghai
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: ["sh", "-c", "npx prisma migrate deploy && npx tsx watch src/server.ts"]
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: clawmate
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: clawmate
+      TZ: Asia/Shanghai
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redisdata:/data
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:
+  redisdata:
