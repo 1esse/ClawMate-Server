@@ -26,7 +26,7 @@ export const config = {
 
   defaultTrialDays: parseInt(process.env.DEFAULT_TRIAL_DAYS || '7', 10),
   licensePrice: parseFloat(process.env.LICENSE_PRICE || '99.00'),
-  licenseDiscountPrice: parseFloat(process.env.LICENSE_DISCOUNT_PRICE || '0'),
+  licenseDiscountPrice: process.env.LICENSE_DISCOUNT_PRICE ? parseFloat(process.env.LICENSE_DISCOUNT_PRICE) : null,
 
   adminUsername: process.env.ADMIN_USERNAME || 'admin',
   adminPassword: process.env.ADMIN_PASSWORD || '',

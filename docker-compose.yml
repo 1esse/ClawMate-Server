@@ -1,6 +1,9 @@
 services:
   api:
-    build: .
+    build:
+      context: .
+      args:
+        REGISTRY: docker.m.daocloud.io/library
     ports:
       - "3000:3000"
     depends_on:
@@ -18,19 +21,21 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres:16-alpine
+    image: docker.m.daocloud.io/library/postgres:16-alpine
     environment:
       POSTGRES_USER: clawmate
       POSTGRES_PASSWORD: password
       POSTGRES_DB: clawmate
       TZ: Asia/Shanghai
+      PGTZ: Asia/Shanghai
+    command: ["postgres", "-c", "log_timezone=Asia/Shanghai", "-c", "timezone=Asia/Shanghai"]
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
   redis:
-    image: redis:7-alpine
+    image: docker.m.daocloud.io/library/redis:7-alpine
     volumes:
       - redisdata:/data
     ports:

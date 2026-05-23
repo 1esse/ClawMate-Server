@@ -99,6 +99,7 @@ export async function validateLicense(machineCode: string) {
     purchased: false,
     trialStartAt: toMs(license.trialStartAt),
     trialDays: license.trialDays,
+    trialExtensionDays: license.trialExtension,
   }
 }
 
@@ -124,7 +125,7 @@ export async function activateLicense(token: string, machineCode: string) {
     return { success: false, error: '机器码不匹配' }
   }
 
-  const licenseKey = generateLicenseKey()
+  const licenseKey = await generateLicenseKey()
   const now = new Date()
 
   const license = await prisma.license.update({

@@ -45,7 +45,7 @@ export async function createOrder(machineCode: string, paymentMethod: string) {
   }
 
   if (license.status === 'active') {
-    throw new Error('已购买，无需重复购买')
+    return { alreadyPurchased: true }
   }
 
   const existingOrder = await prisma.order.findFirst({
@@ -132,7 +132,7 @@ export async function markOrderPaid(orderNo: string, paymentMethod?: string) {
     })
 
     if (order.licenseId) {
-      const licenseKey = generateLicenseKey()
+      const licenseKey = await generateLicenseKey()
       await tx.license.update({
         where: { id: order.licenseId },
         data: {
@@ -163,7 +163,7 @@ export async function getLicensePriceWithDiscount(machineCode?: string) {
   const price = await getLicensePriceFromConfig()
   const discountPrice = await getLicenseDiscountPriceFromConfig()
 
-  if (!machineCode || discountPrice <= 0) {
+  if (!machineCode || !discountPrice || discountPrice <= 0) {
     return { price, currency: 'CNY' }
   }
 
@@ -186,15 +186,16 @@ export async function getLicensePriceWithDiscount(machineCode?: string) {
   }
 }
 
-async function getLicenseDiscountPriceFromConfig(): Promise<number> {
+async function getLicenseDiscountPriceFromConfig(): Promise<number | null> {
   const row = await prisma.appConfig.findUnique({ where: { key: 'license_discount_price' } })
-  return row ? Number(row.value) : config.licenseDiscountPrice
+  if (row) return Number(row.value)
+  return config.licenseDiscountPrice
 }
 
 async function getOrderPrice(license: { status: string; trialStartAt: Date | null; trialDays: number }): Promise<number> {
   const discountPrice = await getLicenseDiscountPriceFromConfig()
 
-  if (license.status === 'trial' && discountPrice > 0 && license.trialStartAt) {
+  if (license.status === 'trial' && discountPrice && discountPrice > 0 && license.trialStartAt) {
     const trialEnd = new Date(license.trialStartAt).getTime() + license.trialDays * 86400000
     if (Date.now() < trialEnd) {
       return discountPrice

@@ -4,13 +4,13 @@ CREATE TABLE "licenses" (
     "machine_code" TEXT NOT NULL,
     "license_key" TEXT,
     "status" TEXT NOT NULL DEFAULT 'trial',
-    "trial_start_at" TIMESTAMP(3),
+    "trial_start_at" TIMESTAMPTZ,
     "trial_days" INTEGER NOT NULL DEFAULT 7,
     "trial_extension" INTEGER NOT NULL DEFAULT 0,
-    "activated_at" TIMESTAMP(3),
-    "revoked_at" TIMESTAMP(3),
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "activated_at" TIMESTAMPTZ,
+    "revoked_at" TIMESTAMPTZ,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "licenses_pkey" PRIMARY KEY ("id")
 );
@@ -25,11 +25,11 @@ CREATE TABLE "orders" (
     "currency" TEXT NOT NULL DEFAULT 'CNY',
     "payment_method" TEXT,
     "payment_status" TEXT NOT NULL DEFAULT 'pending',
-    "paid_at" TIMESTAMP(3),
+    "paid_at" TIMESTAMPTZ,
     "activate_token" TEXT,
-    "token_expires" TIMESTAMP(3),
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "token_expires" TIMESTAMPTZ,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "orders_pkey" PRIMARY KEY ("id")
 );
@@ -42,9 +42,9 @@ CREATE TABLE "activation_tokens" (
     "order_id" TEXT,
     "machine_code" TEXT NOT NULL,
     "used" BOOLEAN NOT NULL DEFAULT false,
-    "used_at" TIMESTAMP(3),
-    "expires_at" TIMESTAMP(3) NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "used_at" TIMESTAMPTZ,
+    "expires_at" TIMESTAMPTZ NOT NULL,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "activation_tokens_pkey" PRIMARY KEY ("id")
 );
@@ -54,7 +54,7 @@ CREATE TABLE "admins" (
     "id" TEXT NOT NULL,
     "username" TEXT NOT NULL,
     "password_hash" TEXT NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "admins_pkey" PRIMARY KEY ("id")
 );
@@ -67,7 +67,7 @@ CREATE TABLE "audit_logs" (
     "target_id" TEXT,
     "operator" TEXT,
     "detail" JSONB,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "audit_logs_pkey" PRIMARY KEY ("id")
 );
@@ -76,7 +76,7 @@ CREATE TABLE "audit_logs" (
 CREATE TABLE "app_config" (
     "key" TEXT NOT NULL,
     "value" JSONB NOT NULL,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "updated_at" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "app_config_pkey" PRIMARY KEY ("key")
 );

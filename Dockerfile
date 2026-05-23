@@ -1,4 +1,6 @@
-FROM node:24-alpine AS builder
+ARG REGISTRY=docker.io/library
+
+FROM ${REGISTRY}/node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -11,7 +13,7 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-FROM node:24-alpine
+FROM ${REGISTRY}/node:24-alpine
 
 WORKDIR /app
 

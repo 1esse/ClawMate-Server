@@ -12,13 +12,13 @@ model License {
   machineCode     String    @unique @map("machine_code")
   licenseKey      String?   @unique @map("license_key")
   status          String    @default("trial")
-  trialStartAt    DateTime? @map("trial_start_at")
+  trialStartAt    DateTime? @map("trial_start_at") @db.Timestamptz()
   trialDays       Int       @default(7) @map("trial_days")
   trialExtension  Int       @default(0) @map("trial_extension")
-  activatedAt     DateTime? @map("activated_at")
-  revokedAt       DateTime? @map("revoked_at")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  activatedAt     DateTime? @map("activated_at") @db.Timestamptz()
+  revokedAt       DateTime? @map("revoked_at") @db.Timestamptz()
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
   orders          Order[]
   activationTokens ActivationToken[]
 
@@ -35,11 +35,11 @@ model Order {
   currency        String    @default("CNY")
   paymentMethod   String?   @map("payment_method")
   paymentStatus   String    @default("pending") @map("payment_status")
-  paidAt          DateTime? @map("paid_at")
+  paidAt          DateTime? @map("paid_at") @db.Timestamptz()
   activateToken   String?   @unique @map("activate_token")
-  tokenExpires    DateTime? @map("token_expires")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  tokenExpires    DateTime? @map("token_expires") @db.Timestamptz()
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
   activationTokens ActivationToken[]
 
   @@map("orders")
@@ -54,9 +54,9 @@ model ActivationToken {
   orderId         String?   @map("order_id")
   machineCode     String    @map("machine_code")
   used            Boolean   @default(false)
-  usedAt          DateTime? @map("used_at")
-  expiresAt       DateTime  @map("expires_at")
-  createdAt       DateTime  @default(now()) @map("created_at")
+  usedAt          DateTime? @map("used_at") @db.Timestamptz()
+  expiresAt       DateTime  @map("expires_at") @db.Timestamptz()
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
 
   @@map("activation_tokens")
 }
@@ -65,7 +65,7 @@ model Admin {
   id              String    @id @default(uuid())
   username        String    @unique
   passwordHash    String    @map("password_hash")
-  createdAt       DateTime  @default(now()) @map("created_at")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
 
   @@map("admins")
 }
@@ -77,7 +77,7 @@ model AuditLog {
   targetId        String?   @map("target_id")
   operator        String?
   detail          Json?
-  createdAt       DateTime  @default(now()) @map("created_at")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
 
   @@map("audit_logs")
 }
@@ -85,7 +85,7 @@ model AuditLog {
 model AppConfig {
   key             String    @id
   value           Json
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
 
   @@map("app_config")
 }

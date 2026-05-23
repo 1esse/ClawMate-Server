@@ -51,15 +51,8 @@ export async function licenseRoutes(fastify: FastifyInstance) {
       throw new AppError('paymentMethod must be alipay or wechat', 400)
     }
 
-    try {
-      const result = await createOrder(machineCode, paymentMethod)
-      return reply.send(result)
-    } catch (err) {
-      if (err instanceof Error && err.message === '已购买，无需重复购买') {
-        throw new AppError(err.message, 400)
-      }
-      throw err
-    }
+    const result = await createOrder(machineCode, paymentMethod)
+    return reply.send(result)
   })
 
   fastify.get('/check-order', async (request, reply) => {
