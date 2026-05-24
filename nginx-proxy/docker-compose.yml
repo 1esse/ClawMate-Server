@@ -1,0 +1,25 @@
+name: nginx-proxy
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - /opt/yue98/backend/ota:/usr/share/nginx/ota
+      - /var/www/certbot:/var/www/certbot
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    networks:
+      - yue98
+      - clawmate
+    restart: unless-stopped
+
+networks:
+  yue98:
+    external: true
+    name: yue98_app-network
+  clawmate:
+    external: true
+    name: clawmate_clawmate

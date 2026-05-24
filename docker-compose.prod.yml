@@ -1,0 +1,50 @@
+name: clawmate
+
+services:
+  api:
+    build:
+      context: .
+      args:
+        REGISTRY: docker.m.daocloud.io/library
+    depends_on:
+      - postgres
+      - redis
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://clawmate:password@postgres:5432/clawmate
+      REDIS_URL: redis://redis:6379
+      TZ: Asia/Shanghai
+    command: ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+    restart: unless-stopped
+    networks:
+      - clawmate
+
+  postgres:
+    image: docker.m.daocloud.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: clawmate
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: clawmate
+      TZ: Asia/Shanghai
+      PGTZ: Asia/Shanghai
+    command: ["postgres", "-c", "log_timezone=Asia/Shanghai", "-c", "timezone=Asia/Shanghai"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - clawmate
+
+  redis:
+    image: docker.m.daocloud.io/library/redis:7-alpine
+    volumes:
+      - redisdata:/data
+    restart: unless-stopped
+    networks:
+      - clawmate
+
+networks:
+  clawmate:
+
+volumes:
+  pgdata:
+  redisdata:

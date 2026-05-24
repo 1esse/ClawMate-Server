@@ -11,9 +11,11 @@
     "db:generate": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
     "docker:dev": "cp .env.development .env && docker compose up -d --build api",
-    "docker:prod": "cp .env.production .env && docker compose up -d --build api",
+    "docker:prod": "cp .env.production .env && docker compose -f docker-compose.prod.yml up -d --build api",
     "docker:seed": "docker compose exec api npx tsx prisma/seed.ts",
+    "docker:seed:prod": "docker compose -f docker-compose.prod.yml exec api npx tsx prisma/seed.ts",
     "docker:down": "docker compose down",
+    "docker:down:prod": "docker compose -f docker-compose.prod.yml down",
     "docker:reset": "docker compose down -v && docker compose up -d --build && docker compose exec api npx prisma migrate deploy && docker compose exec api npx tsx prisma/seed.ts"
   },
   "dependencies": {
