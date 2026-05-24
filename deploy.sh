@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DEPLOY_DIR="/opt/clawmate-server"
+DEPLOY_DIR="/opt/ClawMate-Server"
 PROXY_DIR="/opt/nginx-proxy"
 YUE98_DIR="/opt/yue98/backend"
 CERTBOT_DIR="/var/www/certbot"
@@ -42,16 +42,16 @@ if [ -n "$YUE98_NGINX" ]; then
 fi
 
 # ──────────────────────────────────────────────
-# [1] 克隆/更新项目
+# [1] 检查项目文件
 # ──────────────────────────────────────────────
-info "[1/7] 克隆/更新项目..."
+info "[1/7] 检查项目文件..."
 if [ ! -d "$DEPLOY_DIR" ]; then
-  git clone git@github.com:1esse/ClawMate-Server.git "$DEPLOY_DIR"
-  cd "$DEPLOY_DIR"
-else
-  cd "$DEPLOY_DIR"
-  git pull origin main
+  error "项目目录 $DEPLOY_DIR 不存在！"
+  error "请先将 ClawMate-Server 项目上传到 $DEPLOY_DIR"
+  exit 1
 fi
+cd "$DEPLOY_DIR"
+info "项目目录已就绪: $DEPLOY_DIR"
 
 # ──────────────────────────────────────────────
 # [2] 配置环境变量
