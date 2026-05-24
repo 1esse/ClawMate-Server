@@ -8,7 +8,7 @@ services:
       - "443:443"
     volumes:
       - ./nginx:/etc/nginx/conf.d
-      - /opt/yue98/backend/ota:/usr/share/nginx/ota
+      - /opt/backend/ota:/usr/share/nginx/ota
       - /var/www/certbot:/var/www/certbot
       - /etc/letsencrypt:/etc/letsencrypt:ro
     networks:

@@ -2,8 +2,10 @@
 
 DEPLOY_DIR="/opt/ClawMate-Server"
 PROXY_DIR="/opt/nginx-proxy"
-YUE98_DIR="/opt/yue98/backend"
+YUE98_DIR="/opt/backend"
 CERTBOT_DIR="/var/www/certbot"
+
+CERTBOT="/usr/local/bin/certbot"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -119,22 +121,17 @@ info "等待 Nginx 启动..."
 sleep 2
 
 info "验证 yue98 服务..."
-if curl -sf -o /dev/null --max-time 5 https://yiqiyue98.online; then
+if curl -sf -o /dev/null --max-time 5 -H "Host: yiqiyue98.online" http://localhost; then
   info "✅ yue98 服务正常"
 else
-  warn "yue98 HTTPS 不可达，尝试 HTTP..."
-  if curl -sf -o /dev/null --max-time 5 http://yiqiyue98.online; then
-    warn "yue98 HTTP 可达但 HTTPS 不可达，可能是 DNS 问题"
-  else
-    error "yue98 服务不可达！回滚..."
-    cd "$PROXY_DIR" && docker compose down
-    if [ -n "$YUE98_NGINX" ]; then
-      docker start "$YUE98_NGINX"
-      info "已恢复 yue98 原始 Nginx"
-    fi
-    error "请检查问题后重试"
-    exit 1
+  error "yue98 服务不可达！回滚..."
+  cd "$PROXY_DIR" && docker compose down
+  if [ -n "$YUE98_NGINX" ]; then
+    docker start "$YUE98_NGINX"
+    info "已恢复 yue98 原始 Nginx"
   fi
+  error "请检查问题后重试"
+  exit 1
 fi
 
 cd "$DEPLOY_DIR"
@@ -146,7 +143,7 @@ info "[5/7] 申请 SSL 证书..."
 if [ -d "/etc/letsencrypt/live/clawmate.site" ]; then
   info "SSL 证书已存在，跳过"
 else
-  if certbot certonly --webroot -w "$CERTBOT_DIR" -d clawmate.site -d www.clawmate.site -d api.clawmate.site -d admin.clawmate.site; then
+  if $CERTBOT certonly --webroot -w "$CERTBOT_DIR" -d clawmate.site -d www.clawmate.site -d api.clawmate.site -d admin.clawmate.site; then
     info "✅ SSL 证书申请成功"
   else
     error "SSL 证书申请失败！"
@@ -182,7 +179,7 @@ cd "$DEPLOY_DIR"
 # ──────────────────────────────────────────────
 info "[7/7] 配置证书自动续期..."
 
-CRON_CMD="0 3 * * * certbot renew --quiet && docker exec nginx-proxy-nginx-1 nginx -s reload"
+CRON_CMD="0 3 * * * $CERTBOT renew --quiet && docker exec nginx-proxy-nginx-1 nginx -s reload"
 (crontab -l 2>/dev/null | grep -v "clawmate.site" | grep -v "nginx-proxy-nginx-1" || true) | { cat; echo "$CRON_CMD"; } | crontab -
 
 info "✅ 证书自动续期已配置"
