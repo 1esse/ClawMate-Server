@@ -94,7 +94,7 @@ cp "$DEPLOY_DIR/nginx-proxy/nginx/yue98.conf" "$PROXY_DIR/nginx/yue98.conf"
 cat > "$PROXY_DIR/nginx/clawmate.conf" << 'CERTBOT_CONF'
 server {
     listen 80;
-    server_name clawmate.site api.clawmate.site admin.clawmate.site;
+    server_name clawmate.site www.clawmate.site api.clawmate.site admin.clawmate.site;
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -146,7 +146,7 @@ info "[5/7] 申请 SSL 证书..."
 if [ -d "/etc/letsencrypt/live/clawmate.site" ]; then
   info "SSL 证书已存在，跳过"
 else
-  if certbot certonly --webroot -w "$CERTBOT_DIR" -d clawmate.site -d api.clawmate.site -d admin.clawmate.site; then
+  if certbot certonly --webroot -w "$CERTBOT_DIR" -d clawmate.site -d www.clawmate.site -d api.clawmate.site -d admin.clawmate.site; then
     info "✅ SSL 证书申请成功"
   else
     error "SSL 证书申请失败！"
