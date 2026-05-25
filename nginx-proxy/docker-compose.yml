@@ -9,6 +9,8 @@ services:
     volumes:
       - ./nginx:/etc/nginx/conf.d
       - /opt/backend/ota:/usr/share/nginx/ota
+      - ./site:/usr/share/nginx/clawmate-site
+      - ./admin:/usr/share/nginx/clawmate-admin
       - /var/www/certbot:/var/www/certbot
       - /etc/letsencrypt:/etc/letsencrypt:ro
     networks:

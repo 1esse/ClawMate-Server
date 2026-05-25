@@ -88,7 +88,7 @@ docker compose -f docker-compose.prod.yml exec api npx tsx prisma/seed.ts
 # ──────────────────────────────────────────────
 info "[4/7] 部署独立 Nginx 反向代理..."
 
-mkdir -p "$PROXY_DIR/nginx" "$CERTBOT_DIR"
+mkdir -p "$PROXY_DIR/nginx" "$PROXY_DIR/site" "$PROXY_DIR/admin" "$CERTBOT_DIR"
 
 cp "$DEPLOY_DIR/nginx-proxy/docker-compose.yml" "$PROXY_DIR/docker-compose.yml"
 cp "$DEPLOY_DIR/nginx-proxy/nginx/yue98.conf" "$PROXY_DIR/nginx/yue98.conf"

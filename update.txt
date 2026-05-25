@@ -1,0 +1,4 @@
+cd /opt/ClawMate-Server
+docker compose -f docker-compose.prod.yml up -d --build api
+cp nginx-proxy/nginx/clawmate.conf /opt/nginx-proxy/nginx/clawmate.conf
+cd /opt/nginx-proxy && docker compose exec nginx nginx -t && docker compose exec nginx nginx -s reload
