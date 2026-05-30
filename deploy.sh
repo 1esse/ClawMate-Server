@@ -58,17 +58,18 @@ info "项目目录已就绪: $DEPLOY_DIR"
 # ──────────────────────────────────────────────
 # [2] 配置环境变量
 # ──────────────────────────────────────────────
-info "[2/7] 配置环境变量..."
-if [ ! -f .env ]; then
-  cp .env.production .env
-  warn "请编辑 $DEPLOY_DIR/.env 配置以下必填项："
+info "[2/7] 检查环境变量..."
+if [ ! -f .env.production ]; then
+  error ".env.production 不存在！"
+  exit 1
+fi
+if grep -q "ADMIN_PASSWORD=change_me" .env.production || grep -q "JWT_SECRET=change_me" .env.production; then
+  warn "请编辑 $DEPLOY_DIR/.env.production 配置以下必填项："
   echo "     - ADMIN_PASSWORD"
   echo "     - JWT_SECRET"
   echo "     - ED25519_PRIVATE_KEY / ED25519_PUBLIC_KEY"
   echo ""
-  read -p "  按 Enter 编辑 .env 文件..." && vi .env
-else
-  info ".env 已存在，跳过"
+  read -p "  按 Enter 编辑 .env.production 文件..." && vi .env.production
 fi
 
 # ──────────────────────────────────────────────

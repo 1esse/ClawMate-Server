@@ -2,6 +2,8 @@ name: clawmate
 
 services:
   api:
+    ports:
+      - "3002:3000"
     build:
       context: .
       args:
@@ -9,7 +11,7 @@ services:
     depends_on:
       - postgres
       - redis
-    env_file: .env
+    env_file: .env.production
     environment:
       DATABASE_URL: postgresql://clawmate:password@postgres:5432/clawmate
       REDIS_URL: redis://redis:6379

@@ -5,11 +5,11 @@ services:
       args:
         REGISTRY: docker.m.daocloud.io/library
     ports:
-      - "3000:3000"
+      - "3002:3000"
     depends_on:
       - postgres
       - redis
-    env_file: .env
+    env_file: .env.development
     environment:
       DATABASE_URL: postgresql://clawmate:password@postgres:5432/clawmate
       REDIS_URL: redis://redis:6379
