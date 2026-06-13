@@ -32,31 +32,38 @@ async function createAlipayOrder(orderNo: string, amount: number): Promise<Payme
     }
     return {
       paymentUrl: `https://openapi.alipay.com/mock/pay?orderNo=${orderNo}&amount=${amount}`,
-      qrCode: `https://qr.alipay.com/mock/${orderNo}`,
+      qrCode: '',
     }
   }
 
   const AlipaySdk = (await import('alipay-sdk')).default
-  const alipaySdk = new AlipaySdk({
+  const sdkOptions: Record<string, string> = {
     appId: config.alipayAppId,
     privateKey: config.alipayPrivateKey,
     alipayPublicKey: config.alipayPublicKey,
-  })
+  }
+  if (config.alipayGateway) {
+    sdkOptions.gateway = config.alipayGateway
+  }
+  const alipaySdk = new AlipaySdk(sdkOptions)
 
-  const result = await alipaySdk.exec('alipay.trade.precreate', {
+  const result = await alipaySdk.pageExec('alipay.trade.page.pay', {
+    method: 'GET',
+    returnUrl: `${config.siteUrl}/payment/callback`,
     notifyUrl: `${config.serverUrl}/api/v1/payment/alipay-callback`,
     bizContent: {
       out_trade_no: orderNo,
       total_amount: amount.toFixed(2),
       subject: 'ClawMate 许可证',
+      product_code: 'FAST_INSTANT_TRADE_PAY',
       timeout_express: '30m',
     },
   })
 
-  const qrCode = (result as Record<string, string>).qrCode || (result as Record<string, string>).qr_code || ''
+  const paymentUrl = result as string
   return {
-    paymentUrl: qrCode,
-    qrCode,
+    paymentUrl,
+    qrCode: '',
   }
 }
 
@@ -95,6 +102,19 @@ async function createWechatOrder(orderNo: string, amount: number): Promise<Payme
     paymentUrl: codeUrl,
     qrCode: codeUrl,
   }
+}
+
+export function decryptAlipayContent(encrypted: string, aesKey: string): string {
+  const crypto = require('crypto')
+  const key = Buffer.from(aesKey, 'base64')
+  const iv = Buffer.alloc(16, 0)
+  const decipher = crypto.createDecipheriv('aes-128-cbc', key, iv)
+  decipher.setAutoPadding(true)
+  const decrypted = Buffer.concat([
+    decipher.update(Buffer.from(encrypted, 'base64')),
+    decipher.final(),
+  ])
+  return decrypted.toString('utf8')
 }
 
 export function verifyAlipaySignature(params: Record<string, string>): boolean {

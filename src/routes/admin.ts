@@ -97,10 +97,11 @@ export async function adminRoutes(fastify: FastifyInstance) {
     })
 
     protectedFastify.get('/orders', async (request, reply) => {
-      const { page = '1', pageSize = '20', paymentStatus } = request.query as {
+      const { page = '1', pageSize = '20', paymentStatus, search } = request.query as {
         page?: string
         pageSize?: string
         paymentStatus?: string
+        search?: string
       }
 
       const pageNum = parseInt(page, 10)
@@ -110,6 +111,12 @@ export async function adminRoutes(fastify: FastifyInstance) {
       const where: Record<string, unknown> = {}
       if (paymentStatus) {
         where.paymentStatus = paymentStatus
+      }
+      if (search) {
+        where.OR = [
+          { orderNo: { contains: search, mode: 'insensitive' } },
+          { machineCode: { contains: search, mode: 'insensitive' } },
+        ]
       }
 
       const [total, data] = await Promise.all([

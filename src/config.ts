@@ -3,6 +3,7 @@ export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
 
   serverUrl: process.env.SERVER_URL || 'http://localhost:3000',
+  siteUrl: process.env.SITE_URL || 'http://localhost:5173',
 
   databaseUrl: process.env.DATABASE_URL || '',
 
@@ -14,6 +15,8 @@ export const config = {
   alipayAppId: process.env.ALIPAY_APP_ID || '',
   alipayPrivateKey: process.env.ALIPAY_PRIVATE_KEY || '',
   alipayPublicKey: process.env.ALIPAY_PUBLIC_KEY || '',
+  alipayAesKey: process.env.ALIPAY_AES_KEY || '',
+  alipayGateway: process.env.ALIPAY_GATEWAY || '',
 
   wechatAppId: process.env.WECHAT_APP_ID || '',
   wechatMchId: process.env.WECHAT_MCH_ID || '',

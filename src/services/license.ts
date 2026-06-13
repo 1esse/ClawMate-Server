@@ -228,15 +228,16 @@ export async function updateTrialConfig(trialDays: number) {
 }
 
 export async function getStats() {
-  const [totalLicenses, activeLicenses, trialLicenses, revokedLicenses] = await Promise.all([
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+
+  const [totalLicenses, activeLicenses, trialLicenses, revokedLicenses, todayRegistrations] = await Promise.all([
     prisma.license.count(),
     prisma.license.count({ where: { status: 'active' } }),
     prisma.license.count({ where: { status: 'trial' } }),
     prisma.license.count({ where: { status: 'revoked' } }),
+    prisma.license.count({ where: { createdAt: { gte: todayStart } } }),
   ])
-
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
 
   const [totalRevenueResult, todayOrders, todayRevenueResult] = await Promise.all([
     prisma.order.aggregate({ _sum: { amount: true }, where: { paymentStatus: 'paid' } }),
@@ -249,6 +250,7 @@ export async function getStats() {
     activeLicenses,
     trialLicenses,
     revokedLicenses,
+    todayRegistrations,
     totalRevenue: totalRevenueResult._sum.amount ? Number(totalRevenueResult._sum.amount) : 0,
     todayOrders,
     todayRevenue: todayRevenueResult._sum.amount ? Number(todayRevenueResult._sum.amount) : 0,

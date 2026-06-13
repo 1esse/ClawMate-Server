@@ -231,7 +231,7 @@ openssl rand -hex 32
 | POST | `/api/v1/payment/wechat-callback` | 无 | 微信回调 |
 | POST | `/api/v1/admin/login` | 无 | 管理员登录 |
 | GET | `/api/v1/admin/licenses` | JWT | 许可证列表 |
-| GET | `/api/v1/admin/orders` | JWT | 订单列表 |
+| GET | `/api/v1/admin/orders` | JWT | 订单列表（支持 ?paymentStatus=&search=） |
 | POST | `/api/v1/admin/extend-trial` | JWT | 延长试用期 |
 | POST | `/api/v1/admin/revoke-license` | JWT | 吊销许可证 |
 | POST | `/api/v1/admin/update-trial-config` | JWT | 修改全局试用天数 |
