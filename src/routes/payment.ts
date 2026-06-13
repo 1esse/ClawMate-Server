@@ -2,7 +2,6 @@ import { FastifyInstance } from 'fastify'
 import { markOrderPaid } from '../services/order'
 import { verifyAlipaySignature, verifyWechatSignature, decryptWechatResource, decryptAlipayContent } from '../services/payment'
 import { AppError } from '../utils/error'
-import { config } from '../config'
 
 export async function paymentRoutes(fastify: FastifyInstance) {
   fastify.post('/alipay-callback', async (request, reply) => {
@@ -14,10 +13,7 @@ export async function paymentRoutes(fastify: FastifyInstance) {
 
     // AES 解密（如果启用了加密通信）
     if (params.encrypt_type === 'AES' && params.biz_content) {
-      const aesKey = config.alipayAesKey
-      if (aesKey) {
-        params.biz_content = decryptAlipayContent(params.biz_content, aesKey)
-      }
+      params.biz_content = decryptAlipayContent(params.biz_content)
     }
 
     const tradeStatus = params.trade_status

@@ -1,3 +1,7 @@
+import crypto from 'crypto'
+import fs from 'fs'
+import { AlipaySdk } from 'alipay-sdk'
+import WxPay from 'wechatpay-node-v3'
 import { config } from '../config'
 
 export interface PaymentResult {
@@ -7,6 +11,16 @@ export interface PaymentResult {
 
 function isProduction(): boolean {
   return config.nodeEnv === 'production'
+}
+
+function getAlipaySdk(): AlipaySdk {
+  return new AlipaySdk({
+    appId: config.alipayAppId,
+    privateKey: config.alipayPrivateKey,
+    alipayPublicKey: config.alipayPublicKey,
+    gateway: config.alipayGateway || undefined,
+    encryptKey: config.alipayAesKey || undefined,
+  })
 }
 
 export async function createPaymentOrder(
@@ -36,18 +50,9 @@ async function createAlipayOrder(orderNo: string, amount: number): Promise<Payme
     }
   }
 
-  const AlipaySdk = (await import('alipay-sdk')).default
-  const sdkOptions: Record<string, string> = {
-    appId: config.alipayAppId,
-    privateKey: config.alipayPrivateKey,
-    alipayPublicKey: config.alipayPublicKey,
-  }
-  if (config.alipayGateway) {
-    sdkOptions.gateway = config.alipayGateway
-  }
-  const alipaySdk = new AlipaySdk(sdkOptions)
+  const alipaySdk = getAlipaySdk()
 
-  const result = await alipaySdk.pageExec('alipay.trade.page.pay', {
+  const paymentUrl = alipaySdk.pageExec('alipay.trade.page.pay', {
     method: 'GET',
     returnUrl: `${config.siteUrl}/payment/callback`,
     notifyUrl: `${config.serverUrl}/api/v1/payment/alipay-callback`,
@@ -60,7 +65,6 @@ async function createAlipayOrder(orderNo: string, amount: number): Promise<Payme
     },
   })
 
-  const paymentUrl = result as string
   return {
     paymentUrl,
     qrCode: '',
@@ -78,8 +82,6 @@ async function createWechatOrder(orderNo: string, amount: number): Promise<Payme
     }
   }
 
-  const fs = await import('fs')
-  const WxPay = (await import('wechatpay-node-v3')).default
   const pay = new WxPay({
     appid: config.wechatAppId,
     mchid: config.wechatMchId,
@@ -97,24 +99,11 @@ async function createWechatOrder(orderNo: string, amount: number): Promise<Payme
     },
   })
 
-  const codeUrl = (result as Record<string, string>).code_url || ''
+  const codeUrl = (result as { code_url?: string }).code_url || ''
   return {
     paymentUrl: codeUrl,
     qrCode: codeUrl,
   }
-}
-
-export function decryptAlipayContent(encrypted: string, aesKey: string): string {
-  const crypto = require('crypto')
-  const key = Buffer.from(aesKey, 'base64')
-  const iv = Buffer.alloc(16, 0)
-  const decipher = crypto.createDecipheriv('aes-128-cbc', key, iv)
-  decipher.setAutoPadding(true)
-  const decrypted = Buffer.concat([
-    decipher.update(Buffer.from(encrypted, 'base64')),
-    decipher.final(),
-  ])
-  return decrypted.toString('utf8')
 }
 
 export function verifyAlipaySignature(params: Record<string, string>): boolean {
@@ -127,20 +116,17 @@ export function verifyAlipaySignature(params: Record<string, string>): boolean {
   }
 
   try {
-    const crypto = require('crypto')
-    const sign = params.sign
-    const signType = params.sign_type
-    const sortedKeys = Object.keys(params)
-      .filter(k => k !== 'sign' && k !== 'sign_type' && params[k] !== '')
-      .sort()
-    const signStr = sortedKeys.map(k => `${k}=${params[k]}`).join('&')
-    const verify = crypto.createVerify(signType === 'RSA2' ? 'RSA-SHA256' : 'RSA-SHA1')
-    verify.update(signStr, 'utf8')
-    return verify.verify(config.alipayPublicKey, sign, 'base64')
+    const alipaySdk = getAlipaySdk()
+    return alipaySdk.checkNotifySign(params, true)
   } catch (err) {
     console.error('[Alipay] Signature verification failed:', err)
     return false
   }
+}
+
+export function decryptAlipayContent(encrypted: string): string {
+  const alipaySdk = getAlipaySdk()
+  return alipaySdk.aesDecrypt(encrypted)
 }
 
 export function verifyWechatSignature(headers: Record<string, string>, body: string): boolean {
@@ -153,8 +139,6 @@ export function verifyWechatSignature(headers: Record<string, string>, body: str
   }
 
   try {
-    const crypto = require('crypto')
-    const fs = require('fs')
     const timestamp = headers['wechatpay-timestamp'] || ''
     const nonce = headers['wechatpay-nonce'] || ''
     const signature = headers['wechatpay-signature'] || ''
@@ -178,7 +162,6 @@ export function decryptWechatResource(resource: { ciphertext: string; nonce: str
   }
 
   try {
-    const crypto = require('crypto')
     const key = Buffer.from(config.wechatApiKey, 'utf8')
     const iv = Buffer.from(resource.nonce, 'utf8')
     const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv)
