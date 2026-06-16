@@ -23,6 +23,7 @@ COPY prisma ./prisma/
 RUN npm install --omit=dev && npx prisma generate
 
 COPY --from=builder /app/dist ./dist
+COPY certs ./certs
 
 EXPOSE 3000
 

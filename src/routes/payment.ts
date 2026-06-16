@@ -44,7 +44,7 @@ export async function paymentRoutes(fastify: FastifyInstance) {
     const headers = request.headers as Record<string, string>
     const rawBody = JSON.stringify(request.body)
 
-    if (!verifyWechatSignature(headers, rawBody)) {
+    if (!await verifyWechatSignature(headers, rawBody)) {
       throw new AppError('Invalid signature', 400)
     }
 

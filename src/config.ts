@@ -20,6 +20,7 @@ export const config = {
 
   wechatAppId: process.env.WECHAT_APP_ID || '',
   wechatMchId: process.env.WECHAT_MCH_ID || '',
+  wechatSerialNo: process.env.WECHAT_SERIAL_NO || '',
   wechatApiKey: process.env.WECHAT_API_KEY || '',
   wechatCertPath: process.env.WECHAT_CERT_PATH || '',
   wechatPrivateKeyPath: process.env.WECHAT_PRIVATE_KEY_PATH || '',

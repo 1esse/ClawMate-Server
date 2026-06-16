@@ -1,4 +1,3 @@
-import crypto from 'crypto'
 import fs from 'fs'
 import { AlipaySdk } from 'alipay-sdk'
 import WxPay from 'wechatpay-node-v3'
@@ -20,6 +19,17 @@ function getAlipaySdk(): AlipaySdk {
     alipayPublicKey: config.alipayPublicKey,
     gateway: config.alipayGateway || undefined,
     encryptKey: config.alipayAesKey || undefined,
+  })
+}
+
+function getWxPay(): WxPay {
+  return new WxPay({
+    appid: config.wechatAppId,
+    mchid: config.wechatMchId,
+    serial_no: config.wechatSerialNo,
+    publicKey: fs.readFileSync(config.wechatCertPath),
+    privateKey: fs.readFileSync(config.wechatPrivateKeyPath),
+    key: config.wechatApiKey,
   })
 }
 
@@ -82,12 +92,7 @@ async function createWechatOrder(orderNo: string, amount: number): Promise<Payme
     }
   }
 
-  const pay = new WxPay({
-    appid: config.wechatAppId,
-    mchid: config.wechatMchId,
-    publicKey: fs.readFileSync(config.wechatCertPath),
-    privateKey: fs.readFileSync(config.wechatPrivateKeyPath),
-  })
+  const pay = getWxPay()
 
   const result = await pay.transactions_native({
     description: 'ClawMate 许可证',
@@ -129,7 +134,7 @@ export function decryptAlipayContent(encrypted: string): string {
   return alipaySdk.aesDecrypt(encrypted)
 }
 
-export function verifyWechatSignature(headers: Record<string, string>, body: string): boolean {
+export async function verifyWechatSignature(headers: Record<string, string>, body: string): Promise<boolean> {
   if (!config.wechatApiKey) {
     if (isProduction()) {
       console.error('[WeChat] Rejecting callback: WECHAT_API_KEY not configured')
@@ -139,14 +144,14 @@ export function verifyWechatSignature(headers: Record<string, string>, body: str
   }
 
   try {
-    const timestamp = headers['wechatpay-timestamp'] || ''
-    const nonce = headers['wechatpay-nonce'] || ''
-    const signature = headers['wechatpay-signature'] || ''
-    const message = `${timestamp}\n${nonce}\n${body}\n`
-    const publicKey = fs.readFileSync(config.wechatCertPath, 'utf8')
-    const verify = crypto.createVerify('RSA-SHA256')
-    verify.update(message)
-    return verify.verify(publicKey, signature, 'base64')
+    const pay = getWxPay()
+    return pay.verifySign({
+      timestamp: headers['wechatpay-timestamp'] || '',
+      nonce: headers['wechatpay-nonce'] || '',
+      body,
+      serial: headers['wechatpay-serial'] || '',
+      signature: headers['wechatpay-signature'] || '',
+    })
   } catch (err) {
     console.error('[WeChat] Signature verification failed:', err)
     return false
@@ -162,13 +167,8 @@ export function decryptWechatResource(resource: { ciphertext: string; nonce: str
   }
 
   try {
-    const key = Buffer.from(config.wechatApiKey, 'utf8')
-    const iv = Buffer.from(resource.nonce, 'utf8')
-    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv)
-    decipher.setAuthTag(Buffer.from(resource.ciphertext.slice(-16), 'base64'))
-    decipher.setAAD(Buffer.from(resource.associated_data, 'utf8'))
-    const decrypted = decipher.update(resource.ciphertext.slice(0, -16), 'base64', 'utf8')
-    return decrypted
+    const pay = getWxPay()
+    return pay.decipher_gcm(resource.ciphertext, resource.associated_data, resource.nonce)
   } catch (err) {
     console.error('[WeChat] Resource decryption failed:', err)
     throw new Error('Failed to decrypt WeChat callback resource')
