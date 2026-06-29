@@ -4,6 +4,7 @@ services:
   api:
     ports:
       - "3002:3000"
+      - "127.0.0.1:5555:5555"
     build:
       context: .
       args:
@@ -25,7 +26,7 @@ services:
     image: docker.m.daocloud.io/library/postgres:16-alpine
     environment:
       POSTGRES_USER: clawmate
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: password_clawmate0408
       POSTGRES_DB: clawmate
       TZ: Asia/Shanghai
       PGTZ: Asia/Shanghai

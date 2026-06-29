@@ -79,6 +79,41 @@ docker compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
 docker compose -f docker-compose.prod.yml exec api npx tsx prisma/seed.ts
 ```
 
+### 可视化数据库管理（Prisma Studio）
+
+Prisma 自带 Web 端数据库管理工具，支持所有表的查看、筛选、编辑、删除。
+
+**第一步**：在 `docker-compose.prod.yml` 给 api 服务加端口映射（只绑定本地，避免公网访问）：
+
+```yaml
+api:
+  ports:
+    - "3002:3000"
+    - "127.0.0.1:5555:5555"  # 新增：Prisma Studio
+```
+
+重建容器：
+
+```bash
+docker compose -f docker-compose.prod.yml up -d api
+```
+
+**第二步**：服务器上启动 Prisma Studio（`--hostname 0.0.0.0` 让容器外也能访问）：
+
+```bash
+docker compose -f docker-compose.prod.yml exec api npx prisma studio --port 5555 --hostname 0.0.0.0
+```
+
+**第三步**：本地建 SSH 隧道（把服务器的 5555 端口转回本地）：
+
+```bash
+ssh -L 5555:127.0.0.1:5555 root@120.27.19.183
+```
+
+**第四步**：本地浏览器打开 `http://localhost:5555` 即可看到所有表。
+
+> ⚠️ 用完记得关闭 Prisma Studio 进程（`Ctrl+C`），避免数据库一直暴露
+
 ### 手动执行 SQL
 
 ```bash
