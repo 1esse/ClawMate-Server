@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import fs from 'fs'
 import { AlipaySdk } from 'alipay-sdk'
 import WxPay from 'wechatpay-node-v3'
@@ -102,9 +103,27 @@ async function createWechatOrder(orderNo: string, amount: number): Promise<Payme
       total: parseInt(amount.toFixed(2).replace('.', ''), 10),
       currency: 'CNY',
     },
-  })
+  }) as unknown as { status: number; data?: { code_url?: string }; error?: string }
 
-  const codeUrl = (result as { code_url?: string }).code_url || ''
+  console.log('[WeChat] transactions_native result:', JSON.stringify(result))
+
+  // 订单已支付（回调验签失败导致数据库未更新），主动查询并补偿
+  if (result.status === 400 && result.error && result.error.includes('ORDERPAID')) {
+    console.log('[WeChat] Order already paid, querying transaction status...')
+    const queryResult = await pay.query({ out_trade_no: orderNo }) as unknown as { data?: { trade_state?: string; out_trade_no?: string } }
+    console.log('[WeChat] query result:', JSON.stringify(queryResult))
+    if (queryResult.data?.trade_state === 'SUCCESS') {
+      // 返回特殊标记，由 order.ts 处理
+      return { paymentUrl: '__ALREADY_PAID__', qrCode: '' }
+    }
+  }
+
+  const codeUrl = result.data?.code_url
+  if (!codeUrl) {
+    console.error('[WeChat] No code_url in result:', JSON.stringify(result))
+    throw new Error(`WeChat Pay order failed: ${JSON.stringify(result)}`)
+  }
+
   return {
     paymentUrl: codeUrl,
     qrCode: codeUrl,
@@ -144,21 +163,27 @@ export async function verifyWechatSignature(headers: Record<string, string>, bod
   }
 
   try {
-    const pay = getWxPay()
-    return pay.verifySign({
-      timestamp: headers['wechatpay-timestamp'] || '',
-      nonce: headers['wechatpay-nonce'] || '',
-      body,
-      serial: headers['wechatpay-serial'] || '',
-      signature: headers['wechatpay-signature'] || '',
-    })
+    // 用微信支付公钥直接验签，绕过 SDK 拉取平台证书
+    const publicKey = fs.readFileSync(config.wechatCertPath, 'utf-8')
+    const timestamp = headers['wechatpay-timestamp'] || ''
+    const nonce = headers['wechatpay-nonce'] || ''
+    const signature = headers['wechatpay-signature'] || ''
+
+    const data = `${timestamp}\n${nonce}\n${body}\n`
+    const verify = crypto.createVerify('RSA-SHA256')
+    verify.update(data)
+    verify.end()
+
+    const result = verify.verify(publicKey, signature, 'base64')
+    console.log('[WeChat] verifySign result:', result)
+    return result
   } catch (err) {
     console.error('[WeChat] Signature verification failed:', err)
     return false
   }
 }
 
-export function decryptWechatResource(resource: { ciphertext: string; nonce: string; associated_data: string }): string {
+export function decryptWechatResource(resource: { ciphertext: string; nonce: string; associated_data: string }): string | Record<string, unknown> {
   if (!config.wechatApiKey) {
     if (isProduction()) {
       throw new Error('WeChat API key not configured, cannot decrypt callback resource')

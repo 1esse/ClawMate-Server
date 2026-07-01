@@ -60,6 +60,11 @@ export async function createOrder(machineCode: string, paymentMethod: string) {
 
   if (existingOrder) {
     const paymentResult = await createPaymentOrder(existingOrder.orderNo, Number(existingOrder.amount), paymentMethod)
+    // 微信订单已支付但回调失败，主动补偿
+    if (paymentResult.paymentUrl === '__ALREADY_PAID__') {
+      await markOrderPaid(existingOrder.orderNo, paymentMethod)
+      return { alreadyPurchased: true }
+    }
     return {
       orderNo: existingOrder.orderNo,
       paymentUrl: paymentResult.paymentUrl,

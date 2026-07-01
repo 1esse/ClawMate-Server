@@ -47,6 +47,26 @@ async function bootstrap() {
     }
   )
 
+  // 微信支付回调需要原始请求体验签，用自定义解析器保留 raw 字符串
+  fastify.addContentTypeParser(
+    'application/json',
+    { parseAs: 'string' },
+    (_req, body, done) => {
+      try {
+        const raw = body as string
+        const parsed = JSON.parse(raw)
+        // 把原始字符串挂在对象上，供微信回调验签使用
+        Object.defineProperty(parsed, '__rawBody', {
+          value: raw,
+          enumerable: false,
+        })
+        done(null, parsed)
+      } catch (err) {
+        done(err as Error)
+      }
+    }
+  )
+
   fastify.get('/health', async () => {
     return { status: 'ok', timestamp: Date.now() }
   })
