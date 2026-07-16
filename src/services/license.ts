@@ -66,8 +66,90 @@ export async function registerLicense(machineCode: string) {
   }
 }
 
-export async function validateLicense(machineCode: string) {
+export async function validateLicense(machineCode: string, licenseKey?: string) {
+  // 1. 优先用 machineCode 查询
   let license = await prisma.license.findUnique({ where: { machineCode } })
+
+  // 2. 需要迁移的情况：
+  //    a. machineCode 查不到 + 带了 licenseKey（新机器码从未注册过）
+  //    b. machineCode 查到 trial + 带了 licenseKey（新机器码先注册了试用，再带 licenseKey 迁移）
+  const needsMigration = !!licenseKey && (!license || license.status === 'trial')
+
+  if (needsMigration) {
+    const existingLicense = await prisma.license.findUnique({
+      where: { licenseKey },
+    })
+
+    // 只迁移 active 状态且 machineCode 不同的 license
+    if (existingLicense && existingLicense.status === 'active' && existingLicense.machineCode !== machineCode) {
+      // 迁移频率限制：同一 licenseKey 30 天内最多迁移 3 次
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      const recentMigrations = await prisma.auditLog.count({
+        where: {
+          action: 'migrate_license',
+          detail: { path: ['licenseKey'], equals: licenseKey },
+          createdAt: { gte: thirtyDaysAgo },
+        },
+      })
+
+      if (recentMigrations >= 3) {
+        // 超过迁移限制，创建/保留试用
+        if (!license) {
+          const trialConfig = await getTrialConfig()
+          license = await prisma.license.create({
+            data: {
+              machineCode,
+              status: 'trial',
+              trialStartAt: new Date(),
+              trialDays: trialConfig.trialDays,
+            },
+          })
+        }
+
+        await prisma.auditLog.create({
+          data: {
+            action: 'migrate_rejected',
+            targetType: 'license',
+            targetId: existingLicense.id,
+            detail: { machineCode, licenseKey, reason: 'migration_limit_exceeded' },
+          },
+        })
+      } else {
+        // 执行迁移（事务保证原子性）
+        const oldMachineCode = existingLicense.machineCode
+
+        license = await prisma.$transaction(async (tx) => {
+          // 如果新 machineCode 已有 trial 记录，先解除 Order 关联再删除
+          const existingTrial = await tx.license.findUnique({ where: { machineCode } })
+          if (existingTrial && existingTrial.status === 'trial' && existingTrial.id !== existingLicense.id) {
+            await tx.order.updateMany({
+              where: { licenseId: existingTrial.id },
+              data: { licenseId: null },
+            })
+            await tx.license.delete({ where: { id: existingTrial.id } })
+          }
+
+          // 更新 active license 的 machineCode 为新值
+          const updated = await tx.license.update({
+            where: { id: existingLicense.id },
+            data: { machineCode },
+          })
+
+          // 记录审计日志（用于迁移频率限制）
+          await tx.auditLog.create({
+            data: {
+              action: 'migrate_license',
+              targetType: 'license',
+              targetId: updated.id,
+              detail: { oldMachineCode, newMachineCode: machineCode, licenseKey },
+            },
+          })
+
+          return updated
+        })
+      }
+    }
+  }
 
   if (!license) {
     const trialConfig = await getTrialConfig()
