@@ -27,13 +27,13 @@ export async function licenseRoutes(fastify: FastifyInstance) {
   })
 
   fastify.post('/validate', async (request, reply) => {
-    const { machineCode, licenseKey } = request.body as { machineCode: string; licenseKey?: string }
+    const { machineCode, licenseKey, os } = request.body as { machineCode: string; licenseKey?: string; os?: string }
 
     if (!machineCode) {
       throw new AppError('machineCode is required', 400)
     }
 
-    const result = await validateLicense(machineCode, licenseKey)
+    const result = await validateLicense(machineCode, licenseKey, os)
     return reply.send(result)
   })
 

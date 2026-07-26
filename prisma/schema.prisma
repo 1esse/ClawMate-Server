@@ -12,6 +12,7 @@ model License {
   machineCode     String    @unique @map("machine_code")
   licenseKey      String?   @unique @map("license_key")
   status          String    @default("trial")
+  os              String?   @map("os")
   trialStartAt    DateTime? @map("trial_start_at") @db.Timestamptz()
   trialDays       Int       @default(7) @map("trial_days")
   trialExtension  Int       @default(0) @map("trial_extension")

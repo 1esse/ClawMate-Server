@@ -66,9 +66,17 @@ export async function registerLicense(machineCode: string) {
   }
 }
 
-export async function validateLicense(machineCode: string, licenseKey?: string) {
+export async function validateLicense(machineCode: string, licenseKey?: string, os?: string) {
   // 1. 优先用 machineCode 查询
   let license = await prisma.license.findUnique({ where: { machineCode } })
+
+  // 已存在记录但 os 为空，补充更新（老用户首次带 os 上报）
+  if (license && !license.os && os) {
+    license = await prisma.license.update({
+      where: { id: license.id },
+      data: { os },
+    })
+  }
 
   // 2. 需要迁移的情况：
   //    a. machineCode 查不到 + 带了 licenseKey（新机器码从未注册过）
@@ -102,6 +110,7 @@ export async function validateLicense(machineCode: string, licenseKey?: string) 
               status: 'trial',
               trialStartAt: new Date(),
               trialDays: trialConfig.trialDays,
+              os,
             },
           })
         }
@@ -132,7 +141,7 @@ export async function validateLicense(machineCode: string, licenseKey?: string) 
           // 更新 active license 的 machineCode 为新值
           const updated = await tx.license.update({
             where: { id: existingLicense.id },
-            data: { machineCode },
+            data: { machineCode, os },
           })
 
           // 记录审计日志（用于迁移频率限制）
@@ -159,6 +168,7 @@ export async function validateLicense(machineCode: string, licenseKey?: string) 
         status: 'trial',
         trialStartAt: new Date(),
         trialDays: trialConfig.trialDays,
+        os,
       },
     })
   }

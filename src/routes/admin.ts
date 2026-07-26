@@ -87,6 +87,7 @@ export async function adminRoutes(fastify: FastifyInstance) {
           machineCode: l.machineCode,
           licenseKey: l.licenseKey,
           status: l.status,
+          os: l.os,
           trialStartAt: l.trialStartAt ? l.trialStartAt.getTime() : null,
           trialDays: l.trialDays,
           trialExtension: l.trialExtension,
